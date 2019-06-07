@@ -1,5 +1,6 @@
 const router = require('express').Router();
 const bcrypt = require('bcryptjs');
+const restricted = require('../auth/restricted-middleware.js');
 
 const Users = require('../users/users-model.js');
 
@@ -25,6 +26,8 @@ router.post('/login', (req, res) => {
     .first()
     .then(user => {
       if (user && bcrypt.compareSync(password, user.password)) {
+        req.session.user = user;
+
         res.status(200).json({
           message: `Welcome ${user.username}!`,
         });
@@ -36,5 +39,15 @@ router.post('/login', (req, res) => {
       res.status(500).json(error);
     });
 });
+
+router.get('/logout', restricted, (req, res) => {
+  req.session.destroy(err => {
+    if(err) {
+      console.log(err);
+      return res.status(500).json({ message: 'There was an error' });
+    }
+    res.end();
+  })
+})
 
 module.exports = router;
